@@ -3,7 +3,7 @@ using System.Windows.Forms;
 using System.Runtime.InteropServices;
 
 namespace SharpHotkey {
-	public class Hotkey {
+	public class Hotkey : IDisposable {
 		/// <summary>
 		/// Window handle (from form)
 		/// </summary>
@@ -65,12 +65,19 @@ namespace SharpHotkey {
 		}
 
 		/// <summary>
-		/// Deconstructor attempts to deregister global hotkey
+		/// Deconstrucutor attempts to deregister hotkey
 		/// </summary>
 		~Hotkey() {
-			if(!Deregister()) {
-				throw new Exception("Global hotkey could not be deregistered");
-			}
+			Deregister();
+		}
+
+		/// <summary>
+		/// Deregister our hotkey
+		/// </summary>
+		public void Dispose() {
+			Deregister();
+
+			GC.SuppressFinalize(this);
 		}
 
 		/// <summary>
@@ -113,9 +120,15 @@ namespace SharpHotkey {
 		/// </summary>
 		/// <returns>True if hotkey is deregistered</returns>
 		public bool Deregister() {
+			if(!IsRegistered) return true;
+
 			bool success = UnregisterHotKey(_hWnd, _id);
 
 			IsRegistered = (success) ? false : true;
+
+			if(!success) {
+				throw new Exception("Global hotkey could not be deregistered");
+			}
 
 			return success;
 		}
